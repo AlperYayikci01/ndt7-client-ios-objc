@@ -72,11 +72,11 @@ import Foundation
 ///}
 /// ```
 ///
-open class NDT7 {
+open class NDT7 : NSObject {
 
     /// This parameter allows to enable loggins and check the log messages
     /// for debugging purpose.
-    public static var loggingEnabled: Bool = false {
+    @objc public static var loggingEnabled: Bool = false {
         didSet {
             if loggingEnabled {
                 LogManager.addAllLogLevels()

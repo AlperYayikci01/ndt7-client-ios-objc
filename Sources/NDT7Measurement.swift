@@ -45,7 +45,7 @@ import Foundation
 /// }
 /// ```
 ///
-public struct NDT7Measurement: Codable {
+@objcMembers public class NDT7Measurement: NSObject, Codable {
 
     /// appInfo is an optional object that contains application level measurement.
     public var appInfo: NDT7APPInfo?
@@ -80,18 +80,33 @@ public struct NDT7Measurement: Codable {
         case tcpInfo = "TCPInfo"
         case rawData = "rawData"
     }
+    
+    public init(appInfo: NDT7APPInfo?){
+        self.appInfo = appInfo
+        self.bbrInfo = nil
+        self.connectionInfo = nil
+        self.origin = .client
+        self.direction = .download
+        self.tcpInfo = nil
+        self.rawData = nil
+    }
 }
 
 /// NDT7APPInfo is an optional object only included in the measurement when an application-level measurement is available.
-public struct NDT7APPInfo: Codable {
+@objcMembers public class NDT7APPInfo: NSObject, Codable {
 
     /// elapsed (an Int64) is the time elapsed since the beginning of this test, measured in microseconds.
-    public let elapsedTime: Int64?
+    public let elapsedTime: Int
 
     /// numBytes (an Int64) is the number of bytes sent (or received) since the beginning of the specific test.
     /// Note that this counter tracks the amount of data sent at application level.
     /// It does not account for the protocol overheaded of the WebSockets, TLS, TCP/IP, and link layers.
-    public var numBytes: Int64?
+    public var numBytes: Int
+    
+    public init(elapsedTime: Int, numBytes: Int) {
+        self.elapsedTime = elapsedTime
+        self.numBytes = numBytes
+    }
 
     /// coding keys for codable purpose.
     enum CodingKeys: String, CodingKey {
@@ -184,7 +199,7 @@ public struct NDT7ConnectionInfo: Codable {
 /// which isn't likely the case. Yet, it may be an useful first order information to characterise a network as possibly very lossy.
 /// Some packet loss is normal and healthy,
 /// but too much packet loss is the sign of a network path with systemic problems.
-public struct NDT7TCPInfo: Codable {
+@objcMembers public class NDT7TCPInfo: NSObject, Codable {
 
     /// busyTime aka tcpi_busy_time (an optional Int64),
     /// i.e. the number of microseconds spent actively sending data because the write queue of the TCP socket is non-empty.
@@ -198,24 +213,24 @@ public struct NDT7TCPInfo: Codable {
 
     /// bytesReceived aka tcpi_bytes_received (an optional Int64),
     /// i.e. the number of bytes for which we sent acknowledgment.
-    public let bytesReceived: Int64?
+    public let bytesReceived: Int
 
     /// bytesSent aka tcpi_bytes_sent (an optional Int64),
     /// i.e. the number of bytes which have been transmitted or retransmitted.
-    public let bytesSent: Int64?
+    public let bytesSent: Int
 
     /// bytesRetrans aka tcpi_bytes_retrans (an optional Int64),
     /// i.e. the number of bytes which have been retransmitted.
-    public let bytesRetrans: Int64?
+    public let bytesRetrans: Int
 
     /// elapsedTime (an optional Int64),
     /// this field indicates the moment in which TCP_INFO data has been generated, and therefore is generally useful.
     /// i.e. the time elapsed since the beginning of this test, measured in microseconds.
-    public let elapsedTime: Int64?
+    public let elapsedTime: Int
 
     /// minRTT aka tcpi_min_rtt (an optional Int64),
     /// i.e. the minimum RTT seen by the kernel, measured in microseconds.
-    public let minRTT: Int64?
+    public let minRTT: Int
 
     /// rtt aka tcpi_rtt (an optional Int64), i.e. the current smoothed RTT value, measured in microseconds.
     public let rtt: Int64?

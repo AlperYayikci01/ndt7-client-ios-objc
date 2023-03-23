@@ -9,7 +9,7 @@
 import Foundation
 
 /// This protocol allows to receive the test information.
-public protocol NDT7TestInteraction: class {
+@objc public protocol NDT7TestInteraction: NSObjectProtocol {
 
     /// Provide the status of download and upload test
     /// - parameter kind: Kind of test.
@@ -60,7 +60,7 @@ extension NDT7TestInteraction {
 /// NDT7Test is based on WebSocket and TLS, and takes advantage of TCP BBR, where this flavour of TCP is available.
 /// For more information, please, visit the next link:
 /// https://github.com/m-lab/ndt-server/blob/master/spec/ndt7-protocol.md
-open class NDT7Test {
+@objcMembers open class NDT7Test : NSObject {
 
     /// ndt7TestInstances allows to run just one test. Not concurrency tests allowed.
     static var ndt7TestInstances = [WeakRef<NDT7Test>]()
@@ -95,7 +95,7 @@ open class NDT7Test {
     var tLastDownload: Date?
 
     /// This delegate allows to return the test interaction information (`NDT7TestInteraction` protocol).
-    public weak var delegate: NDT7TestInteraction?
+    @objc public weak var delegate: NDT7TestInteraction?
 
     /// This parameter contains all the settings needed for ndt7 test.
     /// Please, check `NDT7Settings` for more information about the settings.
@@ -105,6 +105,7 @@ open class NDT7Test {
     /// - parameter settings: Contains all the settings needed for ndt7 test (`NDT7Settings`).
     public init(settings: NDT7Settings) {
         self.settings = settings
+        super.init()
         NDT7Test.ndt7TestInstances.append(WeakRef(self))
     }
 
@@ -333,7 +334,7 @@ extension NDT7Test {
         if var measurement = handleMessage(message) {
             measurement.origin = .client
             measurement.direction = .upload
-            measurement.appInfo = NDT7APPInfo(elapsedTime: Int64((t1.timeIntervalSince1970 * 1000000.0) - (t0.timeIntervalSince1970 * 1000000.0)), numBytes: Int64(count))
+            measurement.appInfo = NDT7APPInfo(elapsedTime: Int((t1.timeIntervalSince1970 * 1000000.0) - (t0.timeIntervalSince1970 * 1000000.0)), numBytes: Int(count))
             if let jsonData = try? JSONEncoder().encode(measurement) {
                 measurement.rawData = String(data: jsonData, encoding: .utf8)
             }
@@ -425,15 +426,9 @@ extension NDT7Test: WebSocketInteraction {
                let t0 = t0Download,
                t1.timeIntervalSince1970 - tLast.timeIntervalSince1970 > 0.25 {
                 tLastDownload = t1
-                let elapsedTime = Int64(((t1.timeIntervalSince1970 * 1000000.0) - (t0.timeIntervalSince1970 * 1000000.0)))
-                let appInfo = NDT7APPInfo(elapsedTime: elapsedTime, numBytes: Int64(webSocket.inputBytesLengthAccumulated))
-                var clientMeasurement = NDT7Measurement(appInfo: appInfo,
-                                                        bbrInfo: nil,
-                                                        connectionInfo: nil,
-                                                        origin: .client,
-                                                        direction: .download,
-                                                        tcpInfo: nil,
-                                                        rawData: nil)
+                let elapsedTime = Int(((t1.timeIntervalSince1970 * 1000000.0) - (t0.timeIntervalSince1970 * 1000000.0)))
+                let appInfo = NDT7APPInfo(elapsedTime: elapsedTime, numBytes: Int(webSocket.inputBytesLengthAccumulated))
+                var clientMeasurement = NDT7Measurement(appInfo: appInfo)
                 if let jsonData = try? JSONEncoder().encode(clientMeasurement) {
                     clientMeasurement.rawData = String(data: jsonData, encoding: .utf8)
                 }

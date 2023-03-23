@@ -9,10 +9,10 @@
 import Foundation
 
 /// Test measurement constants.
-public struct NDT7TestConstants {
+public class NDT7TestConstants : NSObject {
 
     /// Origin of the test.
-    public enum Origin: String, Codable {
+    @objc public enum Origin: Int, Codable {
 
         /// client indicates that the measurement origin is the client.
         case client
@@ -22,7 +22,7 @@ public struct NDT7TestConstants {
     }
 
     /// Kind of test.
-    public enum Kind: String, Codable {
+    @objc public enum Kind: Int, Codable {
 
         /// download indicates that this is a download.
         case download
@@ -32,7 +32,7 @@ public struct NDT7TestConstants {
     }
 
     /// Test cancelled.
-    public static let cancelled = "Test cancelled"
+    @objc public static let cancelled = "Test cancelled"
 
     /// Test cancelled error.
     public static let cancelledError = NSError(domain: NDT7WebSocketConstants.domain,
@@ -41,10 +41,12 @@ public struct NDT7TestConstants {
 }
 
 /// Websocket constants definition.
-public struct NDT7WebSocketConstants {
+public class NDT7WebSocketConstants : NSObject {
 
     /// Domain.
     public static let domain = "net.measurementlab.NDT7"
+    
+    @objc public static let noMLabServer = "Cannot find a suitable MLab server"
 
     /// MLab Server discover constants.
     public struct MLabServerDiscover {
@@ -64,7 +66,7 @@ public struct NDT7WebSocketConstants {
         /// Cannot find a suitable MLab server error
         public static let noMLabServerError = NSError(domain: NDT7WebSocketConstants.domain,
                                                       code: 0,
-                                                      userInfo: [NSLocalizedDescriptionKey: "Cannot find a suitable MLab server"])
+                                                      userInfo: [NSLocalizedDescriptionKey: noMLabServer])
     }
 
     /// Websocket constants definition.

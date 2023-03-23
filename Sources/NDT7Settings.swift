@@ -10,7 +10,7 @@ import Foundation
 
 /// Settings needed for NDT7.
 /// Can be used with default values: NDT7Settings()
-public struct NDT7Settings {
+@objcMembers public class NDT7Settings : NSObject {
 
     /// Timeouts
     public let timeout: NDT7Timeouts
@@ -47,7 +47,7 @@ public struct NDT7Settings {
     }
 
     /// Initialization.
-    public init(timeout: NDT7Timeouts = NDT7Timeouts(),
+    @objc public init(timeout: NDT7Timeouts = NDT7Timeouts(),
                 skipTLSCertificateVerification: Bool = false,
                 headers: [String: String] = [NDT7WebSocketConstants.Request.headerProtocolKey: NDT7WebSocketConstants.Request.headerProtocolValue]) {
         self.skipTLSCertificateVerification = skipTLSCertificateVerification
@@ -57,7 +57,7 @@ public struct NDT7Settings {
 }
 
 /// Timeout settings.
-public struct NDT7Timeouts {
+public class NDT7Timeouts : NSObject {
 
     /// Define the interval between messages.
     /// When downloading, the server is expected to send measurement to the client,
@@ -77,7 +77,7 @@ public struct NDT7Timeouts {
     public let uploadTimeout: TimeInterval
 
     /// Initialization.
-    public init(measurement: TimeInterval = NDT7WebSocketConstants.Request.updateInterval,
+    @objc public init(measurement: TimeInterval = NDT7WebSocketConstants.Request.updateInterval,
                 ioTimeout: TimeInterval = NDT7WebSocketConstants.Request.ioTimeout,
                 downloadTimeout: TimeInterval = NDT7WebSocketConstants.Request.downloadTimeout,
                 uploadTimeout: TimeInterval = NDT7WebSocketConstants.Request.uploadTimeout) {
@@ -94,7 +94,11 @@ public struct LocateAPIResponse: Codable {
 }
 
 /// Locate API V2 MLab NDT7 Server.
-public struct NDT7Server: Codable {
+@objcMembers public class NDT7Server: NSObject, Codable {
+    
+    public static var customServerURL: String = NDT7WebSocketConstants.MLabServerDiscover.url
+    
+    public static var customDomainIP: String?
 
     /// The URL of the machine.
     public var machine: String
@@ -104,10 +108,16 @@ public struct NDT7Server: Codable {
 
     /// URLS from which the client can upload/download.
     public var urls: NDT7URLs
+    
+    public init(machine: String, location: NDT7Location? = nil, urls: NDT7URLs) {
+        self.machine = machine
+        self.location = location
+        self.urls = urls
+    }
 }
 
 /// Locate API V2 Location that describes geographic location of the target server.
-public struct NDT7Location: Codable {
+@objcMembers public class NDT7Location: NSObject, Codable {
     /// Country of the target server.
     public var country: String?
 
@@ -154,8 +164,43 @@ extension NDT7Server {
     public static func discover<T: URLSessionNDT7>(session: T = URLSession.shared as! T,
                                                    retry: UInt = 0,
                                                    _ completion: @escaping (_ server: [NDT7Server]?, _ error: NSError?) -> Void) -> URLSessionTaskNDT7 {
+        
+        if let domainIP = NDT7Server.customDomainIP {
+            let request = Networking.urlRequest("http://" + domainIP + "/info.json")
+            let task = session.ndt7DataTask(with: request as URLRequest) { (data, _, error) -> Void in
+                OperationQueue.current?.name = "net.measurementlab.NDT7.MlabServer.customDomainIP"
+                guard error?.localizedDescription != "cancelled" else {
+                    completion(nil, NDT7TestConstants.cancelledError)
+                    return
+                }
+                guard error == nil, let data = data else {
+                    completion(nil, NDT7WebSocketConstants.MLabServerDiscover.noMLabServerError)
+                    return
+                }
+
+                do {
+                    let apiResponse = try JSONDecoder().decode(NDT7Location.self, from: data)
+                    
+                    let server = NDT7Server(machine: domainIP, location: apiResponse,
+                                            urls: NDT7URLs(downloadPath: "wss://" + domainIP + "/ndt/v7/download",
+                                                           uploadPath: "wss://" + domainIP + "/ndt/v7/upload",
+                                                           insecureDownloadPath: "ws://" + domainIP + "/ndt/v7/download",
+                                                           insecureUploadPath: "ws://" + domainIP + "/ndt/v7/upload"))
+                    
+                    
+                    completion([server], nil)
+                } catch let jsonError as NSError {
+                    logNDT7("JSON decode failed: \(jsonError.localizedDescription)")
+                    completion(nil, NDT7WebSocketConstants.MLabServerDiscover.noMLabServerError)
+                }
+
+                return
+            }
+            task.resume()
+            return task
+        }
         let retry = min(retry, 4)
-        let request = Networking.urlRequest(NDT7WebSocketConstants.MLabServerDiscover.url)
+        let request = Networking.urlRequest(customServerURL + "?client_name=ndt7-client-ios")
         let task = session.ndt7DataTask(with: request as URLRequest) { (data, _, error) -> Void in
             OperationQueue.current?.name = "net.measurementlab.NDT7.MlabServer.discover"
             guard error?.localizedDescription != "cancelled" else {
