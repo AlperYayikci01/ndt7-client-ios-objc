@@ -81,14 +81,14 @@ import Foundation
         case rawData = "rawData"
     }
     
-    public init(appInfo: NDT7APPInfo?){
+    public init(appInfo: NDT7APPInfo?, bbrInfo: NDT7BBRInfo?, connectionInfo: NDT7ConnectionInfo?, origin: NDT7TestConstants.Origin?, direction: NDT7TestConstants.Kind?, tcpInfo: NDT7TCPInfo?, rawData: String?){
         self.appInfo = appInfo
-        self.bbrInfo = nil
-        self.connectionInfo = nil
-        self.origin = .client
-        self.direction = .download
-        self.tcpInfo = nil
-        self.rawData = nil
+        self.bbrInfo = bbrInfo
+        self.connectionInfo = connectionInfo
+        self.origin = origin
+        self.direction = direction
+        self.tcpInfo = tcpInfo
+        self.rawData = rawData
     }
 }
 
